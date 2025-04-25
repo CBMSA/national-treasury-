@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -19,6 +17,23 @@
       color: white;
       padding: 30px 20px;
       text-align: center;
+    }
+
+    nav {
+      text-align: center;
+      background-color: black;
+      padding: 10px 0;
+    }
+
+    nav a {
+      color: white;
+      text-decoration: none;
+      margin: 0 15px;
+      font-size: 1.1em;
+    }
+
+    nav a:hover {
+      text-decoration: underline;
     }
 
     main.container {
@@ -91,29 +106,14 @@
   <header>
     <h1>National Treasury Portal</h1>
     <p>CBDC Operations | SADC Central Bank</p>
-<head>
-  <style>
-    nav a {
-      color: white;
-      text-decoration: none; /* Optional: Removes underline */
-    }
-    nav {
-      background-color: black; /* Optional: Add background color for contrast */
-    }
-  </style>
-</head>
-<body>
+  </header>
+
   <nav>
     <a href="index.html">CBDC Portal</a> |
-    <a href="#wallet"> 
+    <a href="#wallet">Get the Wallet</a> |
     <a href="home.html">Home</a> |
     <a href="nationaltreasurytransactions.html">Wallet</a>
   </nav>
-</body>
-
-  </header>
-
-
 
   <main class="container">
     <section class="account-info">
@@ -142,6 +142,66 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
-  <script src="app.js"></script>
+  <script>
+    // Connect to Geth Node
+    const web3 = new Web3('http://<geth-node-ip>:8545'); // Replace <geth-node-ip> with your Geth node's IP or hostname
+
+    // Check Connection
+    web3.eth.net.isListening()
+      .then(() => console.log('Connected to Geth node'))
+      .catch(err => console.error('Failed to connect to Geth node:', err));
+
+    // Display Wallet Address and Balance
+    async function loadAccountInfo() {
+      try {
+        const accounts = await web3.eth.getAccounts();
+        const account = accounts[0];
+        if (account) {
+          document.getElementById('account').innerText = account;
+
+          // Get balance
+          const balance = await web3.eth.getBalance(account);
+          document.getElementById('balance').innerText = web3.utils.fromWei(balance, 'ether');
+        } else {
+          document.getElementById('account').innerText = 'No account found';
+        }
+      } catch (err) {
+        console.error('Error loading account info:', err);
+      }
+    }
+
+    loadAccountInfo();
+
+    // Send Funds
+    document.getElementById('sendForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const recipient = document.getElementById('recipient').value;
+      const amount = document.getElementById('amount').value;
+
+      if (!web3.utils.isAddress(recipient)) {
+        document.getElementById('statusMessage').innerText = 'Invalid recipient address';
+        return;
+      }
+
+      try {
+        const accounts = await web3.eth.getAccounts();
+        const sender = accounts[0];
+
+        const transaction = {
+          from: sender,
+          to: recipient,
+          value: web3.utils.toWei(amount, 'ether'),
+          gas: 21000,
+        };
+
+        const receipt = await web3.eth.sendTransaction(transaction);
+        document.getElementById('statusMessage').innerText = `Transaction successful: ${receipt.transactionHash}`;
+      } catch (err) {
+        console.error('Error sending transaction:', err);
+        document.getElementById('statusMessage').innerText = 'Transaction failed';
+      }
+    });
+  </script>
 </body>
 </html>
