@@ -1,82 +1,67 @@
+// Backend (app.js)
 const express = require('express');
-const Web3 = require('web3');
-const { v4: uuid } = require('uuid');
-const dotenv = require('dotenv');
-dotenv.config();
-
+const cors = require('cors');
 const app = express();
+const port = 3001;
+
+app.use(cors());
 app.use(express.json());
 
-// Connect to local Ethereum node or testnet
-const web3 = new Web3('http://localhost:8545'); // Replace with Infura/Alchemy for mainnet
+let treasuryBalance = 100000000000.00;
 
-// In-memory store for accounts (simulate DB)
-let accounts = {};
+app.get('/api/balance', (req, res) => {
+  res.json({ balance: treasuryBalance });
+});
 
-// Initialize National Treasury Wallet
-const NATIONAL_TREASURY = web3.eth.accounts.create();
-accounts[NATIONAL_TREASURY.address] = {
-  ...NATIONAL_TREASURY,
-  balance: web3.utils.toWei('100000000000.00', 'ether'), // 100 billion ZAR
-};
+app.post('/api/send', (req, res) => {
+  const { to, amount } = req.body;
+  if (amount > treasuryBalance) {
+    return res.status(400).json({ error: 'Insufficient funds in treasury.' });
+  }
+  treasuryBalance -= amount;
+  res.json({ success: true, newBalance: treasuryBalance, to });
+});
 
-// Create New CBDC Wallet
-app.post('/api/account/create', (req, res) => {
-  const { name, idNumber, institution } = req.body;
-  const wallet = web3.eth.accounts.create();
-  accounts[wallet.address] = {
-    ...wallet,
-    balance: web3.utils.toWei('100.00', 'ether'), // 100 ZAR grant
-    name,
-    idNumber,
-    institution,
+app.listen(port, () => {
+  console.log(`Treasury DApp API running on port ${port}`);
+});
+
+// Frontend (App.jsx)
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+
+export default function App() {
+  const [balance, setBalance] = useState(0);
+  const [to, setTo] = useState('');
+  const [amount, setAmount] = useState('');
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    axios.get('http://localhost:3001/api/balance')
+      .then(res => setBalance(res.data.balance));
+  }, []);
+
+  const handleSend = () => {
+    axios.post('http://localhost:3001/api/send', { to, amount: parseFloat(amount) })
+      .then(res => {
+        setMessage(`Sent R${amount} to ${to}`);
+        setBalance(res.data.newBalance);
+        setAmount('');
+        setTo('');
+      })
+      .catch(err => {
+        setMessage(err.response?.data?.error || 'Error occurred');
+      });
   };
-  res.status(201).json({
-    message: 'CBDC wallet created',
-    address: wallet.address,
-    privateKey: wallet.privateKey,
-    balance: '100.00 ZAR',
-  });
-});
 
-// Get Account Balance
-app.get('/api/account/balance/:address', (req, res) => {
-  const { address } = req.params;
-  if (!accounts[address]) return res.status(404).json({ error: 'Account not found' });
-
-  const balance = web3.utils.fromWei(accounts[address].balance, 'ether');
-  res.status(200).json({ address, balance: `${balance} ZAR` });
-});
-
-// Transfer CBDC
-app.post('/api/tx/transfer', (req, res) => {
-  const { from, to, amount } = req.body;
-  if (!accounts[from] || !accounts[to]) {
-    return res.status(404).json({ error: 'Invalid from/to address' });
-  }
-
-  const weiAmount = web3.utils.toWei(amount.toString(), 'ether');
-  if (BigInt(accounts[from].balance) < BigInt(weiAmount)) {
-    return res.status(400).json({ error: 'Insufficient funds' });
-  }
-
-  // Transfer funds
-  accounts[from].balance = (BigInt(accounts[from].balance) - BigInt(weiAmount)).toString();
-  accounts[to].balance = (BigInt(accounts[to].balance) + BigInt(weiAmount)).toString();
-
-  res.status(200).json({
-    message: `Transferred ${amount} ZAR`,
-    from,
-    to,
-    txID: uuid(),
-  });
-});
-
-// Default route
-app.get('/', (req, res) => {
-  res.send('CBDC API for National Treasury is running.');
-});
-
-// Run Server
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => console.log(`CBDC API running on port ${PORT}`));
+  return (
+    <div style={{ maxWidth: '600px', margin: 'auto', padding: '20px', fontFamily: 'Segoe UI' }}>
+      <h1>National Treasury DApp</h1>
+      <p><strong>Balance:</strong> R{balance.toLocaleString()}</p>
+      <input type="text" placeholder="Recipient (e.g., Wallet ID)" value={to} onChange={e => setTo(e.target.value)} style={{ width: '100%', marginBottom: '10px' }} />
+      <input type="number" placeholder="Amount" value={amount} onChange={e => setAmount(e.target.value)} style={{ width: '100%', marginBottom: '10px' }} />
+      <button onClick={handleSend} style={{ width: '100%', padding: '10px', background: '#00509e', color: 'white', border: 'none', borderRadius: '5px' }}>Send</button>
+      {message && <p style={{ marginTop: '10px', color: 'green' }}>{message}</p>}
+    </div>
+  );
+}
