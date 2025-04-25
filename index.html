@@ -1,0 +1,45 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>National Treasury | CBDC Portal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>National Treasury Portal</h1>
+    <p>CBDC Operations | SADC Central Bank</p>
+  </header>
+
+  <main class="container">
+    <section class="account-info">
+      <h2>Account Info</h2>
+      <p><strong>Wallet Address:</strong> <span id="account">Connecting...</span></p>
+      <p><strong>Balance:</strong> <span id="balance">Loading...</span> ZAR</p>
+    </section>
+
+    <section class="transaction-form">
+      <h2>Send Funds</h2>
+      <form id="sendForm">
+        <label for="recipient">Recipient Address:</label>
+        <input type="text" id="recipient" required />
+
+        <label for="amount">Amount (ZAR):</label>
+        <input type="number" id="amount" required />
+
+        <button type="submit">Send</button>
+      </form>
+      <p id="statusMessage"></p>
+    </section>
+  </main>
+
+  <footer>
+    &copy; 2025 National Treasury | SADC CBDC Management
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
