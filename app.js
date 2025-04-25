@@ -1,4 +1,3 @@
-// Backend (app.js)
 const express = require('express');
 const cors = require('cors');
 const app = express();
@@ -22,46 +21,37 @@ app.post('/api/send', (req, res) => {
   res.json({ success: true, newBalance: treasuryBalance, to });
 });
 
+app.post('/api/convert/fiat', (req, res) => {
+  const { amount, currency } = req.body;
+  if (amount > treasuryBalance) {
+    return res.status(400).json({ error: 'Insufficient treasury funds.' });
+  }
+  const rate = currency === 'USD' ? 0.054 : 1; // Example: 1 ZAR = 0.054 USD
+  const converted = amount * rate;
+  treasuryBalance -= amount;
+  res.json({ converted, currency, newBalance: treasuryBalance });
+});
+
+app.post('/api/convert/etf', (req, res) => {
+  const { amount } = req.body;
+  if (amount > treasuryBalance) {
+    return res.status(400).json({ error: 'Insufficient treasury funds.' });
+  }
+  const etfUnits = amount / 1000; // Example: 1000 ZAR = 1 ETF unit
+  treasuryBalance -= amount;
+  res.json({ etfUnits, newBalance: treasuryBalance });
+});
+
+app.post('/api/withdraw', (req, res) => {
+  const { amount, bankAccount } = req.body;
+  if (amount > treasuryBalance) {
+    return res.status(400).json({ error: 'Insufficient funds in treasury.' });
+  }
+  treasuryBalance -= amount;
+  res.json({ success: true, bankAccount, withdrawnAmount: amount, newBalance: treasuryBalance });
+});
+
 app.listen(port, () => {
   console.log(`Treasury DApp API running on port ${port}`);
 });
 
-// Frontend (App.jsx)
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-
-export default function App() {
-  const [balance, setBalance] = useState(0);
-  const [to, setTo] = useState('');
-  const [amount, setAmount] = useState('');
-  const [message, setMessage] = useState('');
-
-  useEffect(() => {
-    axios.get('http://localhost:3001/api/balance')
-      .then(res => setBalance(res.data.balance));
-  }, []);
-
-  const handleSend = () => {
-    axios.post('http://localhost:3001/api/send', { to, amount: parseFloat(amount) })
-      .then(res => {
-        setMessage(`Sent R${amount} to ${to}`);
-        setBalance(res.data.newBalance);
-        setAmount('');
-        setTo('');
-      })
-      .catch(err => {
-        setMessage(err.response?.data?.error || 'Error occurred');
-      });
-  };
-
-  return (
-    <div style={{ maxWidth: '600px', margin: 'auto', padding: '20px', fontFamily: 'Segoe UI' }}>
-      <h1>National Treasury DApp</h1>
-      <p><strong>Balance:</strong> R{balance.toLocaleString()}</p>
-      <input type="text" placeholder="Recipient (e.g., Wallet ID)" value={to} onChange={e => setTo(e.target.value)} style={{ width: '100%', marginBottom: '10px' }} />
-      <input type="number" placeholder="Amount" value={amount} onChange={e => setAmount(e.target.value)} style={{ width: '100%', marginBottom: '10px' }} />
-      <button onClick={handleSend} style={{ width: '100%', padding: '10px', background: '#00509e', color: 'white', border: 'none', borderRadius: '5px' }}>Send</button>
-      {message && <p style={{ marginTop: '10px', color: 'green' }}>{message}</p>}
-    </div>
-  );
-}
