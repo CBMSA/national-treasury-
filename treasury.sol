@@ -1,43 +1,8 @@
-
-
-// File: Treasury.sol
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
-
-contract Treasury {
-    address public admin;
-    uint256 public totalBalance;
-
-    event Transferred(address indexed to, uint256 amount, string memo);
-
-    constructor() {
-        admin = msg.sender;
-        totalBalance = 100_000_000_000 ether; // 100 Billion ZAR
-    }
-
-    modifier onlyAdmin() {
-        require(msg.sender == admin, "Only admin can perform this action");
-        _;
-    }
-
-    function getBalance() public view returns (uint256) {
-        return totalBalance;
-    }
-
-    function transfer(address to, uint256 amount, string memory memo) public onlyAdmin {
-        require(amount <= totalBalance, "Insufficient funds");
-        totalBalance -= amount;
-        payable(to).transfer(amount);
-        emit Transferred(to, amount, memo);
-    }
-
-    receive() external payable {
-        totalBalance += msg.value;
-    }
-}
-
 const CONTRACT_ABI = [/* ... */];
 const CONTRACT_ADDRESS = "0x...";
+
+// Replace this with your Geth node URL
+const GETH_NODE_URL = "http://<geth-node-ip>:8545"; // Replace <geth-node-ip> with the actual IP or hostname of your Geth node.
 
 let web3;
 let account;
@@ -61,8 +26,25 @@ window.addEventListener('load', async () => {
     } catch (error) {
       console.error('Wallet connection error:', error);
     }
+  } else if (GETH_NODE_URL) {
+    // Fallback to Geth node if MetaMask is not available
+    web3 = new Web3(new Web3.providers.HttpProvider(GETH_NODE_URL));
+    console.log("Connected to Geth node via HTTP provider.");
+
+    // Load account from Geth node
+    try {
+      const accounts = await web3.eth.getAccounts();
+      account = accounts[0];
+      document.getElementById('account').innerText = account;
+
+      const balanceWei = await web3.eth.getBalance(account);
+      const balance = web3.utils.fromWei(balanceWei, 'ether');
+      document.getElementById('balance').innerText = parseFloat(balance).toFixed(2);
+    } catch (error) {
+      console.error('Error connecting to Geth node:', error);
+    }
   } else {
-    alert('Web3 wallet not detected. Please install MetaMask.');
+    alert('Web3 wallet or Geth node connection not detected.');
   }
 });
 
