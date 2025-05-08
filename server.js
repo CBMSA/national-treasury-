@@ -1,4 +1,3 @@
-// server.js - Node.js backend for SADC CBDC Platform with OracleDB
 
 const express = require('express'); const bodyParser = require('body-parser'); const oracledb = require('oracledb'); const cors = require('cors');
 
