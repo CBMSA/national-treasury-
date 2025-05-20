@@ -1,0 +1,144 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tokenized Bond Issuance | SADC CBDC</title>
+  <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f2f4f7;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 60px;
+    }
+
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      width: 360px;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      color: #2c3e50;
+      text-align: center;
+    }
+
+    input[type="text"], input[type="number"] {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      margin-bottom: 20px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #005c9c;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background-color: #004b83;
+    }
+
+    #status {
+      margin-top: 20px;
+      font-size: 14px;
+      color: green;
+      text-align: center;
+    }
+
+    #unauthorized {
+      color: red;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    footer {
+      margin-top: 60px;
+      font-size: 12px;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+  <div class="card" id="issuerPanel" style="display:none;">
+    <h2>Bond Issuance Console</h2>
+
+    <label>Investor Wallet Address</label>
+    <input type="text" id="recipient" placeholder="0x...">
+
+    <label>Bond Amount (ZAR)</label>
+    <input type="number" id="amount" placeholder="e.g. 100000">
+
+    <button onclick="issueBond()">Issue Bond</button>
+    <div id="status"></div>
+  </div>
+
+  <div id="unauthorized" style="display:none;">
+    Access Denied: This wallet is not authorized for bond issuance.
+  </div>
+
+  <footer>
+    &copy; SADC CBDC 2025 | All Rights Reserved
+  </footer>
+
+  <script>
+    const bondABI = [ /* paste your smart contract ABI here */ ];
+    const bondAddress = '0xYourBondContractAddress'; // replace with deployed bond contract
+    const issuerAddress = '0xYourIssuerWalletAddress'; // replace with your issuer wallet
+
+    let web3, bondContract, currentAccount;
+
+    window.addEventListener('load', async () => {
+      if (typeof window.ethereum !== 'undefined') {
+        web3 = new Web3(window.ethereum);
+        await ethereum.request({ method: 'eth_requestAccounts' });
+
+        const accounts = await web3.eth.getAccounts();
+        currentAccount = accounts[0];
+
+        if (currentAccount.toLowerCase() !== issuerAddress.toLowerCase()) {
+          document.getElementById('unauthorized').style.display = 'block';
+          return;
+        }
+
+        bondContract = new web3.eth.Contract(bondABI, bondAddress);
+        document.getElementById('issuerPanel').style.display = 'block';
+      } else {
+        alert('MetaMask is required to use this page.');
+      }
+    });
+
+    async function issueBond() {
+      const recipient = document.getElementById('recipient').value.trim();
+      const amount = parseInt(document.getElementById('amount').value.trim());
+
+      if (!web3.utils.isAddress(recipient)) {
+        document.getElementById('status').innerText = 'Invalid recipient address.';
+        return;
+      }
+
+      try {
+        await bondContract.methods.issue(recipient, amount).send({ from: currentAccount });
+        document.getElementById('status').innerText = `Bond issued to ${recipient} for ${amount} ZAR.`;
+      } catch (error) {
+        console.error(error);
+        document.getElementById('status').innerText = `Transaction failed: ${error.message}`;
+      }
+    }
+  </script>
+</body>
+</html>
