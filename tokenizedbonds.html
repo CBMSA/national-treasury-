@@ -1,152 +1,162 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Tokenized Bond Issuance | Bank of Thailand CBDC</title>
+  <title>SADC CBDC | Country Bond Portal</title>
   <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jspdf"></script> <!-- For PDF generation -->
-  <script src="https://cdn.jsdelivr.net/npm      font-family: 'Segoe UI', sans-serif;
-      background-color: #f2f4f7;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding-top: 60px;
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f5f8fa;
+      padding: 40px 10px;
     }
-    .card {
+    .container {
+      max-width: 600px;
+      margin: auto;
       background: white;
-      padding: 30px;
-      border-radius: 12px;
-      box[type="number"] {
+      border-radius: 10px;
+      box-shadow: 0 0 10px #ccc;
+      padding: 20px;
+    }
+    input, select, button {
       width: 100%;
       padding: 10px;
-      margin-top: 6px;
-      margin-bottom: 20px;
-      border: 1px solid #ccc;
+      margin: 10px 0;
+      font-size: 16px;
       border-radius: 6px;
     }
-    button {
-      width: 100%;
-      padding: 12px;
-      background;
-      text-align: center;
-    }
-    #unauthorized {
-      color: red;
-      font-weight: bold;
-      text-align: center;
-    }
-    #digitalCertificate {
+    #bondHistory {
+      background: #f9f9f9;
+      padding: 10px;
+      border-radius: 8px;
       margin-top: 20px;
-      text-align: center;
-    }
-    #qrCode {
-      margin-top: 10px;
-    }
-    footer {
-      margin-top:: 12px;
-      color: #888;
     }
   </style>
 </head>
 <body>
-  <div class="card" id="issuerPanel" style="display:none;">
-    <h2>Tokenized Bond Issuance (THB)</h2>
-<nav>
-    <a href="index.html">CBDC Portal</a> |
-    <a href="home.html">Home</a> |
-    <a href="p2p.html">Wallet</a>
-  </nav>
+  <div class="container">
+    <h2>SADC CBDC – Tokenized Bond Issuance</h2>
+    
+    <div id="loginSection">
+      <p>Connect your wallet and select your country:</p>
+      <select id="countrySelector">
+        <option value="ZAF">South Africa (ZAR)</option>
+        <option value="BWA">Botswana (BWP)</option>
+        <option value="NAM">Namibia (NAD)</option>
+        <option value="MOZ">Mozambique (MZN)</option>
+        <option value="ZMB">Zambia (ZMW)</option>
+        <option value="TZA">Tanzania (TZS)</option>
+        <option value="MWI">Malawi (MWK)</option>
+        <option value="AGO">Angola (AOA)</option>
+        <option value="LSO">Lesotho (LSL)</option>
+        <option value="SWZ">Eswatini (SZL)</option>
+        <option value="COD">DR Congo (CDF)</option>
+        <option value="MDG">Madagascar (MGA)</option>
+        <option value="SEY">Seychelles (SCR)</option>
+        <option value="COM">Comoros (KMF)</option>
+      </select>
+      <button onclick="connectWallet()">Connect Wallet</button>
+      <div id="connectedInfo"></div>
+    </div>
 
+    <div id="issueSection" style="display:none;">
+      <label>Recipient Wallet Address:</label>
+      <input type="text" id="recipient" placeholder="0x...">
+      <label>Bond Amount:</label>
+      <input type="number" id="amount">
+      <button onclick="issueBond()">Issue Bond</button>
+      <div id="status"></div>
+    </div>
 
-    <label>Investor Wallet Address</label>
-    <input0x...">
-
-    <label>Bond Amount (THB)</label>
-    <input type="number" id="amount" placeholder="เช่น 100000">
-
-    <button onclick="issueBond()">Issue Bond</button>
-    <div id="status"></div>
-
-    <div id="digitalCertificate" style="display:none;">
-      <h3>Digital Bond Certificate</h3>
-      <pre id="certificate PDF Certificate</button>
+    <div id="bondHistory">
+      <h4>Bond Issuance History</h4>
+      <ul id="bondList"></ul>
     </div>
   </div>
 
-  <div id="unauthorized" style="display:none;">
-    Access Denied: This wallet is not authorized to issue bonds.
-  </div>
+  <script>
+    let web3;
+    let currentAccount;
+    let countryData = {};
 
-  <footer>
-    &copy; Bank of Thailand CBDC 2025 | All Rights Reserved
-  </footer>
+    const currencyMap = {
+      "ZAF": "ZAR",
+      "BWA": "BWP",
+      "NAM": "NAD",
+      "MOZ": "MZN",
+      "ZMB": "ZMW",
+      "TZA": "TZS",
+      "MWI": "MWK",
+      "AGO": "AOA",
+      "LSO": "LSL",
+      "SWZ": "SZL",
+      "COD": "CDF",
+      "MDG": "MGA",
+      "SEY": "SCR",
+      "COM": "KMF"
+    };
 
- load', async () => {
+    async function connectWallet() {
       if (typeof window.ethereum !== 'undefined') {
         web3 = new Web3(window.ethereum);
-        await ethereum.request({ method: 'eth_requestAccounts' });
-
-        const accounts = await web3.eth.getAccounts();
+        const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
         currentAccount = accounts[0];
 
-        if (currentAccount.toLowerCase() !== issuerAddress.toLowerCase()) {
-          document.getElementById('unauthorized').style.display = 'Bond() {
-      const recipient = document.getElementById('recipient').value.trim();
-      const amount = parseInt(document.getElementById('amount').value.trim());
+        const selectedCode = document.getElementById('countrySelector').value;
+        const currency = currencyMap[selectedCode];
 
-      if (!web3.utils.isAddress(recipient)) {
-        document.getElementById('status').innerText = 'Invalid wallet address.';
-        return;
-      }
-
-      try {
-        await bondContract.methods.issue(recipient, amount).send({ from: currentAccount });
-
-        // Display success message
-        document.getElementById('status').innerText = `Bond issued to ${recipient} for ${amount} THB.`;
-
-        // Generate Bond Certificate
-        Bond",
-          interestRate: "2.5% annually",
-          maturityDate: "2028-12-31",
-          issuedBy: "Bank of Thailand",
-          transactionHash: "TX_HASH_PLACEHOLDER" // Replace with actual transaction hash if needed
+        countryData = {
+          countryCode: selectedCode,
+          currency: currency,
+          account: currentAccount,
+          history: []
         };
 
-        // Display Digital Certificate
-        document.getElementById('digitalCertificate').style.display = 'block';
-        document.getElementById('certificateDetails').innerText = JSON.stringify(bondDetails, null, 2);
+        document.getElementById('connectedInfo').innerHTML = 
+          `<strong>Connected:</strong> ${currentAccount}<br>
+           <strong>Country:</strong> ${selectedCode}<br>
+           <strong>Currency:</strong> ${currency}`;
 
-        // Generate QR Code
-        const qrContainer = document.getElementById('qrCode');
-        qrContainer.innerHTML = ''; // Clear any previous QR codes
-        QRCode.toCanvas(qrContainer, JSON.stringify(bondDetails), function (error) {
-          if (error) console.error(error);
-        });
-
-        // Save details for PDF generation
-        window.bondDetails = bondDetails;
-      } catch (error) {
-        console.error(error);
-        document.getElementById('status').innerText = `Transaction failed: ${error.message}`;
+        document.getElementById('issueSection').style.display = 'block';
+      } else {
+        alert("Please install MetaMask or a Web3 wallet.");
       }
     }
 
-    function downloadPDF() {
-      const bondDetails = window.bondDetails;
-      const pdf = new jsPDF();
+    function issueBond() {
+      const recipient = document.getElementById('recipient').value.trim();
+      const amount = parseFloat(document.getElementById('amount').value.trim());
 
-      pdf.text("Bond Certificate", 10, 10);
-      pdf.text(`Recipient WalletbondDetails.recipient}`, 10, 20);
-      pdf.text(`Amount (THB): ${bondDetails.amount}`, 10, 30);
-      pdf.text(`Bond Type: ${bondDetails.bondType}`, 10, 40);
-      pdf.text(`Interest Rate: ${bondDetails.interestRate}`, 10, 50);
-      pdf.text(`Maturity Date: ${bondDetails.maturityDate}`, 10, 60);
-      pdf.text(`Issued By: ${bondDetails.issuedBy}`, 10, 70);
-      pdf.text(`Transaction Hash: ${bondDetails.transactionHash}`, 10, 80);
+      if (!web3.utils.isAddress(recipient)) {
+        alert("Invalid recipient address.");
+        return;
+      }
 
-      pdf.save("Bond_Certificate.pdf");
+      const bond = {
+        recipient: recipient,
+        amount: amount,
+        currency: countryData.currency,
+        issuer: countryData.account,
+        country: countryData.countryCode,
+        timestamp: new Date().toLocaleString()
+      };
+
+      countryData.history.push(bond);
+      displayBondHistory();
+      document.getElementById('status').innerText = `Issued ${amount} ${bond.currency} to ${recipient}`;
+    }
+
+    function displayBondHistory() {
+      const list = document.getElementById('bondList');
+      list.innerHTML = '';
+      countryData.history.forEach(bond => {
+        const item = document.createElement('li');
+        item.textContent = `${bond.amount} ${bond.currency} to ${bond.recipient} on ${bond.timestamp}`;
+        list.appendChild(item);
+      });
     }
   </script>
 </body>
 </html>
+
