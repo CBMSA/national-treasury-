@@ -116,3 +116,28 @@ app.post('/api/transfer', async (req, res) => {
 app.listen(port, () => {
   console.log(`CBDC backend API running on port ${port}`);
 });
+
+
+
+let localWallet = {
+  address: "0xCBM123SADC",
+  balance: 1000000000
+};
+
+function sendToWalletPlatform(amount) {
+  console.log(`Transferred to SADC Wallet Platform: R${amount.toFixed(2)}`);
+  localWallet.balance += amount;
+}
+
+function deductFromWallet(amount) {
+  if (localWallet.balance >= amount) {
+    localWallet.balance -= amount;
+    console.log(`Deducted R${amount.toFixed(2)} from wallet`);
+  } else {
+    console.error("Insufficient funds");
+  }
+}
+
+function getWalletBalance() {
+  return localWallet.balance;
+}
