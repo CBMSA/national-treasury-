@@ -1,0 +1,11 @@
+
+[package]
+name = "SadcWallet"
+version = "0.0.1"
+published-at = "0x0"
+
+[dependencies]
+Sui = { git = "https://github.com/MystenLabs/sui.git", rev = "main", subdir = "crates/sui-framework/packages/sui-framework" }
+
+[addresses]
+SadcWallet = "0x0"
